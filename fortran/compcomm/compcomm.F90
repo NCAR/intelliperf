@@ -4,6 +4,20 @@
 ! repeat one pair of comp and comm
 
 
+      module EXTRAE_MODULE
+          interface
+              subroutine extrae_user_function (enter)
+                  integer*4, intent(in) :: enter
+              end subroutine extrae_user_function
+              subroutine extrae_next_hwc_set
+              end subroutine extrae_next_hwc_set
+!        subroutine extrae_init
+!        end subroutine extrae_init
+!        subroutine extrae_fini
+!        end subroutine extrae_fini
+          end interface
+      end module EXTRAE_MODULE
+
       program compcomm
 
           integer, parameter :: NUMREPEAT = 1000, LENARRAY=10000
@@ -14,8 +28,11 @@
           call random_seed()
 
           do iter=1, NUMREPEAT
+              call extrae_user_function (1)
               call comp(array, shuffle)
               call comm(array, shuffle)
+              call extrae_user_function (0)
+              call extrae_next_hwc_set
           end do
 
           print *, "sum of array: ", sum(array)

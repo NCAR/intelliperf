@@ -16,14 +16,15 @@ temp_list = []
 with open(csvfile,'r') as f:
     plots=csv.reader(f,delimiter=';')
     for row in plots:
-        time_stamp.add(row[3])
+        time_stamp.add(float(row[3]))
         key = row[2]
         if key in hardware_counter_dict:
             temp_list = hardware_counter_dict[key]
-            temp_list.append(row[4])
+            temp_list.append(float(row[4]))
+            hardware_counter_dict[key] = temp_list
             temp_list = []
         else:
-            temp_list.append(row[4])
+            temp_list.append(float(row[4]))
             hardware_counter_dict[key] = temp_list
             temp_list = []
    
@@ -41,10 +42,10 @@ else:
     print "Entered wrong name"
 
 #Plot and label Graph
-plt.plot(temp_list,time_stamp_list)
-plt.ylabel("time")
-plt.xlabel("Usage")
-plt.title("")
+plt.plot(time_stamp_list,temp_list)
+plt.ylabel("Event")
+plt.xlabel("Time")
+plt.title(choice)
 plt.show()
 
 # TODO: save the plot as an image file in a file system.

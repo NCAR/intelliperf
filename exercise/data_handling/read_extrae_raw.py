@@ -5,8 +5,8 @@ import os
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import operator
+import collections
 import pprint
-
 # event type ranges
 FOLDED_SAMPLING_CALLER_LINE = range(631000100, 631000200)
 
@@ -190,25 +190,84 @@ def main():
 
         # TODO: plot bar graph of top10 lineidcounts
         newlineidcounts = dict(sorted(lineidcounts.iteritems(),key = operator.itemgetter(1),reverse = True)[:10])
-        resultIdList = list(newlineidcounts.keys())
-        resultValueList = list(newlineidcounts.values())
-        resultValueList.sort()
-        plt.plot([1,2,3,4,5,6,7,8,9,10],resultValueList)
-        # plt.show()
-        print len(lineidcounts)
-        # print resultIdList
-        # TODO: plot text for lineid to source file and linenum mapping for the top10 lineids
-        # pp = pprint.PrettyPrinter(indent =4)
-        # pp.pprint(lineidsource)
-     ##   if "904" in [x for v in lineidsource.values() for x in v]:
-      ##      print x
+        #resultIdList = list(newlineidcounts.keys())
+        #resultValueList = list(newlineidcounts.values())
         
-      
-      
-      
+        print(type(newlineidcounts))
+        newlineidcounts = collections.OrderedDict(sorted(newlineidcounts.items()))
+        resultIdList = []
+        resultValueList = []
+        for key,value in newlineidcounts.iteritems():
+            resultIdList.append(str(key))
+            resultValueList.append(value)
+        
+        print resultIdList
+        print resultValueList
+        #plt.bar(resultIdList,resultValueList)
+        
+       # plt.xlabel('Lined ID')
+        #plt.ylabel('Number of Sample')
+        #plt.title('Top 10 Line Id and Samples')
+       # plt.show()
+        
+       
+        pp = pprint.PrettyPrinter()
+        pp.pprint(lineidsource)
+        
+        
+       # TODO: plot text for lineid to source file and linenum mapping for the top10 lineids
+       
+        lineIdLineNum = []
+        lineIdFileName = []
+        for x in resultIdList:
+            val = lineidsource.get(int(x))
+            lineIdLineNum.append(int(val[0]))
+            #print val[1]
+            if '[' in val[1]:
+                fileName = str(val[1]).split('[')[0].replace("(","").replace(")","").strip()
+            else :
+                fileName = str(val[1]).split(',')[0].replace('(','').strip()
+            lineIdFileName.append(fileName)    
+        
+        
+        
+        print lineIdFileName
+        print lineIdLineNum
+        w, h = 3, 10;
+        Matrix = [[0 for x in range(w)] for y in range(h)] 
+        labelr = ['1','2','3','4','5','6','7','8','9','10']
+        labelc = ['Line ID', 'Line Number','Source File']
+
+        lightgrn = (0.5, 0.8, 0.5)
+        plt.table(cellText = Matrix,
+                  rowLabels=labelr,
+                  colLabels=labelc,
+                  rowColours=[lightgrn] * 16,
+                  colColours=[lightgrn] * 16,
+                  cellLoc='center',
+                  loc='upper left')
+        plt.axis('off')
+        plt.show()
+        
+        
+        return 0
+
+'''        lineIdLineNum = collections.OrderedDict(sorted(lineIdLineNum.items()))
+        
+        lineIdlineNumList = []
+        
+        for key in lineIdLineNum:
+            lineIdlineNumList.append(lineIdLineNum.get(key))
+        
+        resultIdList.sort()
+        print resultIdList
+        print lineIdlineNumList
+        plt.plot(resultIdList,lineIdlineNumList)
+        plt.show()
+        
+'''
       
 
-    return 0
-
+    
 if __name__ == "__main__":
     sys.exit(main())

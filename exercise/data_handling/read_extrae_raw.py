@@ -195,19 +195,33 @@ def main():
         newlineidcounts = collections.OrderedDict(sorted(newlineidcounts.items()))
         resultIdList = []
         resultValueList = []
+        
         for key,value in newlineidcounts.iteritems():
             resultIdList.append(str(key))
             resultValueList.append(value)
-        left, width = .25, .5
-        bottom, height = .25, .5
-        right = left + width
+        
+        
+        
+        left, width = 0.001, .5
+        bottom, height = .01, .9
+        right = 0.99
         top = bottom + height
+        
         axs[0].bar(resultIdList,resultValueList)
-        axs[0].text(left, 0.5*(bottom+top), 'left center',
-        horizontalalignment='left',
+        
+        axs[0].text(left, 0.5*(bottom+top), 'Number of Samples',
+        horizontalalignment='right',
         verticalalignment='center',
         rotation='vertical',
         transform=axs[0].transAxes)
+        
+        axs[0].text(right, bottom, 'Line ID',
+        horizontalalignment='center',
+        verticalalignment='top',
+        transform=axs[0].transAxes)
+        
+        
+        
         plt.xlabel('Lined ID')
         plt.ylabel('Number of Sample')
         plt.title('Top 10 Line Id and Samples',y = 2.17 )
@@ -240,6 +254,7 @@ def main():
                     Matrix[i][j] = lineIdFileName[i]
         
         lightgrn = (0.5, 0.8, 0.5)
+        
         axs[1].table(cellText = Matrix,
                   rowLabels=labelr,
                   colLabels=labelc,

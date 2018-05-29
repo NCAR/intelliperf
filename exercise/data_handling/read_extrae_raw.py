@@ -211,8 +211,8 @@ def main():
        # plt.show()
         
        
-        pp = pprint.PrettyPrinter()
-        pp.pprint(lineidsource)
+#        pp = pprint.PrettyPrinter()
+ #       pp.pprint(lineidsource)
         
         
        # TODO: plot text for lineid to source file and linenum mapping for the top10 lineids
@@ -237,7 +237,21 @@ def main():
         Matrix = [[0 for x in range(w)] for y in range(h)] 
         labelr = ['1','2','3','4','5','6','7','8','9','10']
         labelc = ['Line ID', 'Line Number','Source File']
-
+        
+        for i in range(len(Matrix)):
+            for j in range(len(Matrix[i])):
+                if j == 0 :
+                    Matrix[i][j] = resultIdList[i]
+                if j == 1 :
+                    Matrix[i][j] = lineIdLineNum[i]
+                if j == 2 :
+                    Matrix[i][j] = lineIdFileName[i]
+        
+        
+        
+        
+        
+        
         lightgrn = (0.5, 0.8, 0.5)
         plt.table(cellText = Matrix,
                   rowLabels=labelr,

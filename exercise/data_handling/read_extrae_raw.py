@@ -3,7 +3,9 @@
 import sys
 import os
 from collections import OrderedDict
-
+import matplotlib.pyplot as plt
+import operator
+import pprint
 
 # event type ranges
 FOLDED_SAMPLING_CALLER_LINE = range(631000100, 631000200)
@@ -129,7 +131,7 @@ class ExtraeRawData(object):
 
     def get_pcf_events(self, eventrange):
         for eventype, (desc, values) in self.pcf.events.items():
-            if eventtype in eventrange:
+            if eventype in eventrange:
                 yield desc, values
 
     def get_pcf_event(self, eventtype):
@@ -179,7 +181,7 @@ def main():
 
         # read extrae raw data
         extraeraw = ExtraeRawData(path)
-
+        
         # get mappings of:
         # lineidcounts: lineid -> number of samples
         # callerlevels: eventtype -> { lineid -> None }
@@ -187,9 +189,24 @@ def main():
         lineidcounts, callerlevels, lineidsource = extraeraw.get_folded_sampling_caller_lines()
 
         # TODO: plot bar graph of top10 lineidcounts
-
-
+        newlineidcounts = dict(sorted(lineidcounts.iteritems(),key = operator.itemgetter(1),reverse = True)[:10])
+        resultIdList = list(newlineidcounts.keys())
+        resultValueList = list(newlineidcounts.values())
+        resultValueList.sort()
+        plt.plot([1,2,3,4,5,6,7,8,9,10],resultValueList)
+        # plt.show()
+        print len(lineidcounts)
+        # print resultIdList
         # TODO: plot text for lineid to source file and linenum mapping for the top10 lineids
+        # pp = pprint.PrettyPrinter(indent =4)
+        # pp.pprint(lineidsource)
+     ##   if "904" in [x for v in lineidsource.values() for x in v]:
+      ##      print x
+        
+      
+      
+      
+      
 
     return 0
 

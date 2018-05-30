@@ -108,3 +108,6 @@ venv.bak/
 *.exe
 *.o
 *.mod
+.DS_Store
+*.png
+*.pdf

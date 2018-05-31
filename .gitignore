@@ -107,3 +107,8 @@ venv.bak/
 *.exe
 *.o
 *.mod
+# custom
+*.swp
+.DS_Store
+*.png
+*.pdf

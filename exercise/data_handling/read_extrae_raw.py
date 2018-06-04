@@ -5,8 +5,7 @@ import os
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import operator
-import collections
-import pprint
+
 # event type ranges
 FOLDED_SAMPLING_CALLER_LINE = range(631000100, 631000200)
 

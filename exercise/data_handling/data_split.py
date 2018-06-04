@@ -155,7 +155,7 @@ ax.set_xticks(ind + width / 2)
 ax.set_xticklabels(time)
 
 ax.legend((rects1[0], rects2[0]), ('Hardware Counters', 'Hardware Counter with ins'))
-
+plt.savefig('visualization.png')
 plt.show()  
 
 

@@ -5,8 +5,7 @@ import os
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import operator
-import collections
-import pprint
+
 # event type ranges
 FOLDED_SAMPLING_CALLER_LINE = range(631000100, 631000200)
 
@@ -187,54 +186,33 @@ def main():
         # callerlevels: eventtype -> { lineid -> None }
         # lineidsource: lineid -> a string that contains line number and source file name
         lineidcounts, callerlevels, lineidsource = extraeraw.get_folded_sampling_caller_lines()
-        fig,axs = plt.subplots(2,1)
- 
+        plt.subplot(211) 
         # TODO: plot bar graph of top10 lineidcounts
         newlineidcounts = dict(sorted(lineidcounts.iteritems(),key = operator.itemgetter(1),reverse = True)[:10])
         
-        newlineidcounts = collections.OrderedDict(sorted(newlineidcounts.items()))
         resultIdList = []
         resultValueList = []
         
-        for key,value in newlineidcounts.iteritems():
+        for key,value in sorted(newlineidcounts.iteritems(),key = lambda(k,v):(v,k)) :
             resultIdList.append(str(key))
             resultValueList.append(value)
         
-        
-        
-        left, width = 0.001, .5
-        bottom, height = .01, .9
-        right = 0.99
-        top = bottom + height
-        
-        axs[0].bar(resultIdList,resultValueList)
-        
-        axs[0].text(left, 0.5*(bottom+top), 'Number of Samples',
-        horizontalalignment='right',
-        verticalalignment='center',
-        rotation='vertical',
-        transform=axs[0].transAxes)
-        
-        axs[0].text(right, bottom, 'Line ID',
-        horizontalalignment='center',
-        verticalalignment='top',
-        transform=axs[0].transAxes)
-        
-        
-        
-        plt.xlabel('Lined ID')
+        plt.bar(resultIdList,resultValueList)
         plt.ylabel('Number of Sample')
-        plt.title('Top 10 Line Id and Samples',y = 2.17 )
+        plt.title('Top 10 Line Id and Samples' )
+        
+        plt.subplots_adjust(bottom =0.1,right=0.8,top = 0.9)
         
        # TODO: plot text for lineid to source file and linenum mapping for the top10 lineids
-       
+        plt.subplot(212)
         lineIdLineNum = []
         lineIdFileName = []
         for x in resultIdList:
             val = lineidsource.get(int(x))
             lineIdLineNum.append(int(val[0]))
+            print val[1]    
             if '[' in val[1]:
-                fileName = str(val[1]).split('[')[0].replace("(","").replace(")","").strip()
+                fileName = str(val[1]).split('[')[1].split('(')[1].split(',')[0].strip()
             else :
                 fileName = str(val[1]).split(',')[0].replace('(','').strip()
             lineIdFileName.append(fileName)    
@@ -255,18 +233,17 @@ def main():
         
         lightgrn = (0.5, 0.8, 0.5)
         
-        axs[1].table(cellText = Matrix,
+        plt.table(cellText = Matrix,
                   rowLabels=labelr,
                   colLabels=labelc,
                   rowColours=[lightgrn] * 16,
                   colColours=[lightgrn] * 16,
                   cellLoc='center',
                   loc='center')
-        axs[1].axis('off')
-        axs[0].axis('tight')
+        plt.axis('off')
         plt.show()
         
-        
+        plt.savefig("Samples.png")
         return 0
           
 if __name__ == "__main__":

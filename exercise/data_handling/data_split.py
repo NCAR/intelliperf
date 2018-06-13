@@ -31,8 +31,8 @@ TEXT_SIZE = 14
 LABEL_SIZE = 16
 LINEWIDTH = 3
 
-#n_trees = [10,100,500,750,1000,1500,2000]
-n_trees = [10,100,500]
+n_trees = [10,100,500,750,1000,1500,2000]
+#n_trees = [10,100,500]
 
 ## CSV File location
 ## __file__   os.path change the absolute path
@@ -118,7 +118,7 @@ for idx in range(len(n_trees)):
     cx = plt.axes(rect_bot_left)
     dx = plt.axes(rect_bot_right)
     size = 0
-    for rs in range(1,10):
+    for rs in range(1,101):
         
         print "at split "
         print rs
@@ -274,6 +274,7 @@ for idx in range(len(n_trees)):
     dx.set_ylim([0,val*1.5])
     rmse_idx = rmse_idx + 1;
     pdf.savefig()
+    plt.close()
     
     
 plt.plot(n_trees,rmse_abs_error,color = 'g')

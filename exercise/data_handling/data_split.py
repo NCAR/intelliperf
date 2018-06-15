@@ -184,9 +184,6 @@ for idx in range(len(n_trees)):
     labelc = ['Hardware Counter Name ', 'Importance of RF1','Importance of RF2']
     
     sorted_dict = sorted(importance_abs_dict)
-    
-    for x in importance_abs_dict:
-        print x,importance_abs_dict[x]
         
     name_counter= []    
     for key, value in sorted(importance_abs_dict.iteritems(), key=lambda (k,v): (v,k),reverse=True):

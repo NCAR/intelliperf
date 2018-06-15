@@ -24,7 +24,7 @@ font = {'family': 'serif',
         'weight': 'normal',
         'size': 16,
         }
-pdf = PdfPages('RandomForestClassifierDataPlot2.pdf')
+pdf = PdfPages('RandomForestClassifierDataPlot1.pdf')
 TITLE_SIZE = 20
 SUBTITLE_SIZE = 16
 TEXT_SIZE = 14
@@ -261,10 +261,10 @@ for idx in range(len(n_trees)):
     '''    
     cx.axis('off')
     b1 = dx.bar([1], [rmse_abs_error[rmse_idx]], width=0.4,
-            label="Bar 1", align="center")
+            label="Abs Counter", align="center")
 
     b2 = dx.bar([2], [rmse_ins_error[rmse_idx]], color="red", width=0.4,
-            label="Bar 2", align="center")
+            label="Per_INS Counter", align="center")
     dx.legend()
     dx.autoscale(tight= True)
     dx.set_ylabel('Error')
@@ -275,7 +275,6 @@ for idx in range(len(n_trees)):
     rmse_idx = rmse_idx + 1;
     pdf.savefig()
     plt.close()
-    
     
 plt.plot(n_trees,rmse_abs_error,color = 'g')
 plt.plot(n_trees,rmse_ins_error, color = 'orange')

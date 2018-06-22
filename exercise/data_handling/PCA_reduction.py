@@ -13,8 +13,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
-pdf = PdfPages('RandomForestClassifierDataPlot1.pdf')
+from sklearn.decomposition import PCA
+pdf = PdfPages('RandomForestClassifierDataPlot_PCA_1.pdf')
 
 
 ############################################## Data Preprocessing ##############################################
@@ -58,13 +58,26 @@ df_split = np.split(df_rest,[45],axis=1)
 df_features = df_split[0]
 df_labels = df_split[1]
 
+pca = PCA(n_components=0.9999)
+data_abs_reduced = pca.fit_transform(df_features)
+print pca.explained_variance_
+print pca.explained_variance_ratio_
+inverse_features_abs=pca.inverse_transform(data_abs_reduced)
+
 # Splitting the ins_data into features and labes
 df_split_ins = np.split(df_per_ins,[44],axis=1)
 df_features_ins = df_split_ins[0]
 df_labels_ins = df_split_ins[1]
 
+data_abs_reduced_ins = pca.fit_transform(df_features_ins)
+print pca.explained_variance_
+print pca.explained_variance_ratio_
+
+
+
 ############################################## Building RandomForest Classifier ##############################################
-n_trees = [10,40,60,100,200,500,750,1000]
+
+n_trees = [10,40]
 
 rmse_idx = 0
 rmse_abs_error = [0] * len(n_trees)
@@ -91,34 +104,24 @@ for idx in range(len(n_trees)):
     # Boundaries for plots
     rect_bot = [0.1,0.65,0.8,0.1]
     rect_top = [0.1,0.85,0.8,0.1]
-    rect_bot_right = [0.6,0.11,0.35,0.3]
-    rect_bot_left = [0.1,0.075,0.35,0.5]
+    rect_bot_right = [0.1,0.11,0.35,0.3]
     plt.figure(1,figsize= (9,9))
     
     ax = plt.axes(rect_top)
     bx = plt.axes(rect_bot)
-    cx = plt.axes(rect_bot_left)
     dx = plt.axes(rect_bot_right)
     size = 0
     for rs in range(1,101):
         
         # Training and Testing data from original data in the ration of 70:30
-        df_features_train, df_features_test, df_labels_train, df_labels_test = train_test_split(df_features,df_labels,test_size = 0.30,random_state=rs) 
+        df_features_train, df_features_test, df_labels_train, df_labels_test = train_test_split(data_abs_reduced,df_labels,test_size = 0.30,random_state=rs) 
 
         # Create a Random Fporest with different number of decision trees
         rf = RandomForestRegressor(n_estimators=n_trees[idx], random_state=rs)
     
         # Train the model on training data
         rf.fit(df_features_train,np.ravel(df_labels_train,order = 'C'));
-        importance_normal = list(zip(rf.feature_importances_,df_features_train.columns))
-        importance_normal.sort(reverse= True)
         
-        # Adding all the imporatance values for each random seed
-        for item in importance_normal:
-            if item[1] in importance_abs_dict.keys():
-                importance_abs_dict[item[1]] = importance_abs_dict[item[1]] + item[0]
-            else:
-                importance_abs_dict[item[1]] = item[0]
         
         #Testing the model with only training data
         prediction_test = rf.predict(df_features_test)
@@ -127,7 +130,7 @@ for idx in range(len(n_trees)):
         mse_abs_arr[rs-1] = mse_abs
         
         #Testing model with all the data
-        prediction = rf.predict(df_features)
+        prediction = rf.predict(data_abs_reduced)
         # Calculating the Error
         error = abs(prediction - df_labels['LABEL'])
         for index,val in error.items():
@@ -136,7 +139,7 @@ for idx in range(len(n_trees)):
         ###### Reapting the above process for the PER_INS values
         
         # Splitting the data for PER_INS counters
-        df_features_ins_train, df_features_ins_test, df_labels_ins_train, df_labels_ins_test = train_test_split(df_features_ins,df_labels_ins,test_size = 0.20, random_state=rs ) 
+        df_features_ins_train, df_features_ins_test, df_labels_ins_train, df_labels_ins_test = train_test_split(data_abs_reduced_ins,df_labels_ins,test_size = 0.20, random_state=rs ) 
 
     
         # Create a Random Fporest with 1000 decision trees
@@ -145,24 +148,16 @@ for idx in range(len(n_trees)):
         # Train the model on training data
         rf2.fit(df_features_ins_train,np.ravel(df_labels_ins_train,order = 'C'));
         
-        importance_ins = list(zip(rf2.feature_importances_,df_features_ins_train.columns))
-        importance_ins.sort(reverse= True)
-        
-        for item in importance_ins:
-            temp = item[1].replace("_per_ins","")
-            if temp in importance_ins_dict.keys():
-                importance_ins_dict[temp] = importance_ins_dict[temp] + item[0]
-            else:
-                importance_ins_dict[temp] = item[0]
         
         prediction_ins_test = rf2.predict(df_features_ins_test)
+        
         
         #error_test = abs(prediction_test - df_labels_test['LABEL'])
         mse_ins = mean_squared_error(df_labels_ins_test['LABEL'], prediction_ins_test)
         mse_ins_arr[rs-1] = mse_ins 
     
         #Testing the model
-        prediction_ins = rf2.predict(df_features_ins)
+        prediction_ins = rf2.predict(data_abs_reduced_ins)
         
         # Calculating the Error
         error_ins = abs(prediction_ins - df_labels_ins['LABEL'])
@@ -173,32 +168,6 @@ for idx in range(len(n_trees)):
     
     
 ############################################## Plotting the results ##############################################
-    # For plotting table with imporatance values 
-    w, h = 3, 15;
-    Matrix = [[0 for x in range(w)] for y in range(h)]
-    labelr = []
-    for x in range(1,16):
-        labelr.append(x)
-    
-    labelc = ['Hardware Counter Name ', 'Importance of RF1','Importance of RF2']
-    
-    sorted_dict = sorted(importance_abs_dict)
-        
-    name_counter= []    
-    for key, value in sorted(importance_abs_dict.iteritems(), key=lambda (k,v): (v,k),reverse=True):
-        # PAPI_TOT_INS counter present in only abs counters but not in per_ins values
-        if key != 'PAPI_TOT_INS':    
-            name_counter.append(key)
-    cnt = 0
-    for i in range(len(Matrix)):
-        for j in range(len(Matrix[i])):
-            if j == 0 :
-                Matrix[i][j] = name_counter[cnt]
-            if j == 1 :
-                Matrix[i][j] = round(importance_abs_dict[name_counter[cnt]]/size,4)
-            if j == 2 :
-                Matrix[i][j] = round(importance_ins_dict[name_counter[cnt]]/size,4)
-        cnt = cnt+1
     
     xList = range(0,1000)
     # Plotting error values for the ABS hardware counter 
@@ -214,16 +183,6 @@ for idx in range(len(n_trees)):
     bx.set_ylabel('Error')
     rmse_abs_error[rmse_idx] = np.sqrt(np.mean(mse_abs_arr))
     rmse_ins_error[rmse_idx] = np.sqrt(np.mean(mse_ins_arr))
-    lightgrn = (0.5, 0.8, 0.5)
-    # Creating table for the imporatance values 
-    table = cx.table(cellText = Matrix,
-              colLabels=labelc,
-              colColours=[lightgrn] * 16,
-              cellLoc='center',
-              colWidths=[0.4 for x in labelc],    
-              loc='center')
-    table.set_fontsize(25)
-    cx.axis('off')
     rmse_values= [0,rmse_abs_error[rmse_idx],rmse_ins_error[rmse_idx]]
     values = ['','Abs','PER_INS']
     ypos = np.arange(len(values))
@@ -239,7 +198,11 @@ for idx in range(len(n_trees)):
     pdf.savefig()
     plt.close()
 
-# Plotting bar graph for RMSE values for different values of the number of trees 
+
+# Getting inversse transorm of the PCA 
+inverse_features_ins=pca.inverse_transform(data_abs_reduced_ins)
+
+# Plotting bar graph for RMSE values for different values of the number of trees     
 N = len(n_trees)
 fig1,ex = plt.subplots()
 ind = np.arange(N)

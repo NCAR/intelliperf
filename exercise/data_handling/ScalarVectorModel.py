@@ -31,15 +31,9 @@ scalarDF = scalarDF.drop(['module_sub_routine','id','time'],axis=1)
 vectorDF = pd.read_csv(csvfileVector,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
 vectorDF = vectorDF.drop(['module_sub_routine','id','time'],axis=1)
 
-resultDF = scalarDF.append(vectorDF)
-print type(resultDF)
 counter_name = scalarDF['hardware_Counter']
 counter_name = counter_name.unique()
 counterName = []
-
-print resultDF.shape
-print scalarDF.shape
-print vectorDF.shape
 
 for str in counter_name:
     if "_per_ins" in str:
@@ -49,7 +43,35 @@ for str in counter_name:
 
 counterName.remove('PAPI_L3_TCR_per_ins')
 
+scalarDF_ins = pd.DataFrame(columns = counterName)
+
+for tempStr in counterName:
+    temp_df = scalarDF[scalarDF['hardware_Counter'] == tempStr]
+    scalarDF_ins[tempStr] = temp_df['event'].values
+
+scalarDF_ins = scalarDF_ins[~scalarDF_ins.isin([np.nan,np.inf,-np.inf]).any(1)]
+
+vectorDF_ins = pd.DataFrame(columns = counterName)
+
+for tempStr in counterName:
+    temp_df = vectorDF[vectorDF['hardware_Counter'] == tempStr]
+    vectorDF_ins[tempStr] = temp_df['event'].values
+
+vectorDF_ins = vectorDF_ins[~vectorDF_ins.isin([np.nan,np.inf,-np.inf]).any(1)]
+
+for str in counterName:
+    total = scalarDF_ins[str].sum()
+    if total == 0:
+       counterName.remove(str)
+print len(counterName)       
+for str in counterName:
+    total = vectorDF_ins[str].sum()
+    if total == 0:
+       counterName.remove(str)
+
 df_per_ins = pd.DataFrame(columns = counterName)
+
+resultDF = scalarDF.append(vectorDF)
 
 for tempStr in counterName:
     temp_df = resultDF[resultDF['hardware_Counter'] == tempStr]
@@ -57,12 +79,16 @@ for tempStr in counterName:
 
 df_per_ins = df_per_ins[~df_per_ins.isin([np.nan,np.inf,-np.inf]).any(1)]
 
+print df_per_ins.shape
 
-df_split_ins = np.split(df_per_ins,[43],axis=1)
+df_split_ins = np.split(df_per_ins,[35],axis=1)
 df_features_ins = df_split_ins[0]
 df_labels_ins = df_split_ins[1]
 
-n_trees = [10,40,60,100,200,500,750,1000]
+print df_features_ins.shape
+print df_labels_ins.shape
+n_trees= [10,40]
+#n_trees = [10,40,60,100,200,500,750,1000]
 
 rmse_idx = 0
 rmse_abs_error = [0] * len(n_trees)

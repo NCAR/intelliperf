@@ -87,7 +87,7 @@ df_labels_ins = df_split_ins[1]
 
 print df_features_ins.shape
 print df_labels_ins.shape
-n_trees= [10,40]
+n_trees= [10,40,60,80,100,200,500,1000,1500]
 #n_trees = [10,40,60,100,200,500,750,1000]
 
 rmse_idx = 0
@@ -104,7 +104,7 @@ for idx in range(len(n_trees)):
     importance_abs_dict = {}
     importance_ins_dict = {}
     error_ins_arr = [0] * 2000
-    mse_ins_arr = [0] * 2000
+    mse_ins_arr = [0] * 100
     plt.figure()
     
     # Boundaries for plots

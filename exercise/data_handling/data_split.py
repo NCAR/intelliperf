@@ -64,7 +64,7 @@ df_features_ins = df_split_ins[0]
 df_labels_ins = df_split_ins[1]
 
 ############################################## Building RandomForest Classifier ##############################################
-n_trees = [10,40,60,100,200,500,750,1000]
+n_trees= [10,40,60,80,100,200,500,1000,1500]
 
 rmse_idx = 0
 rmse_abs_error = [0] * len(n_trees)
@@ -83,8 +83,8 @@ for idx in range(len(n_trees)):
     error_abs_arr = [0] * 1000
     error_ins_arr = [0] * 1000
     
-    mse_abs_arr = [0]* 1000
-    mse_ins_arr = [0] * 1000
+    mse_abs_arr = [0]* 100
+    mse_ins_arr = [0] * 100
     
     plt.figure()
     

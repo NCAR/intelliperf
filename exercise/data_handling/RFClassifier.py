@@ -8,196 +8,225 @@ Created on Mon Jun 25 11:01:39 2018
 
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from sklearn.metrics import mean_squared_error
 
-pdf = PdfPages('RFPlot.pdf')
 
-############################################## Data Preprocessing ##############################################
-# Relative path to the Data file
+def load_data_from_csv(CSV_PATH):
+    return pd.read_csv(CSV_PATH,delimiter = ';',
+                       names = ["module_sub_routine","id","hardware_Counter","time","event"])
 
-csvfileScalar= '../../data/WACCM_imp_sol_scaler.slope.labelled.csv'
-csvfileVector = '../../data/WACCM_imp_sol_vector.slope.labelled.csv'
+def drop_columns(dataFrame,list_col):
+    return dataFrame.drop(list_col,axis=1)
 
-#Converting CSV data to Scalar dataframe
-scalarDF = pd.read_csv(csvfileScalar,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
-scalarDF = scalarDF.drop(['module_sub_routine','id','time'],axis=1)
+def get_CounterNames(dataFrame):
+    counter_name = dataFrame['hardware_Counter']
+    return counter_name.unique()
 
-#Converting CSV data to Vector dataframe
-vectorDF = pd.read_csv(csvfileVector,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
-vectorDF = vectorDF.drop(['module_sub_routine','id','time'],axis=1)
+def remove_ABS_Counter(counterNames):
+    counterName = []
+    for str in counterNames:
+        if "_per_ins" in str:
+            counterName.append(str)
+        elif "LABEL" == str:
+            counterName.append(str)
+    return counterName
 
-# Relative path to the Data file
-csvfile= '../../data/mg2/PSrad.exe.codeblocks.fused.any.any.any.slope.labelled .csv'
+def append_DataFrames(dataFrameA,dataFrameB):
+    return dataFrameA.append(dataFrameB)
 
-#Converting CSV data to dataframe
-dataDF = pd.read_csv(csvfile,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
-dataDF = dataDF.drop(['module_sub_routine','id','time'],axis=1)
 
-counter_name = vectorDF['hardware_Counter']
-counter_name = counter_name.unique()
-counterName = []
+def rearrange(dataFrame,counterNameList):
+    df_per_ins = pd.DataFrame(columns = counterNameList)
+    for tempStr in counterNameList:
+        temp_df = dataFrame[dataFrame['hardware_Counter'] == tempStr]
+        df_per_ins[tempStr] = temp_df['event'].values
+    df_per_ins = df_per_ins[~df_per_ins.isin([np.nan,np.inf,-np.inf]).any(1)]
+    return df_per_ins
 
-for str in counter_name:
-    if "_per_ins" in str:
-        counterName.append(str)
-    elif "LABEL" == str:
-        counterName.append(str)
+def splitData(df_per_ins):
+     return np.split(df_per_ins,[43],axis=1)    
 
-resultDF = scalarDF.append(vectorDF)
+def splitTrainAndTest(df_features,df_labels,rs):
+    return train_test_split(df_features,df_labels,test_size = 0.30, random_state=rs) 
 
-resultDF = resultDF.append(dataDF)
-
-df_per_ins = pd.DataFrame(columns = counterName)
-
-for tempStr in counterName:
-    temp_df = resultDF[resultDF['hardware_Counter'] == tempStr]
-    df_per_ins[tempStr] = temp_df['event'].values
- 
-df_per_ins = df_per_ins[~df_per_ins.isin([np.nan,np.inf,-np.inf]).any(1)]
-
-df_split_ins = np.split(df_per_ins,[43],axis=1)
-df_features_ins = df_split_ins[0]
-df_labels_ins = df_split_ins[1]
-
-n_trees = [10,40,60,100,200,500,750]
-
-rmse_idx = 0
-rmse_abs_error = [0] * len(n_trees)
-rmse_ins_error = [0] * len(n_trees)
-sd_abs_error = [0] * len(n_trees)
-sd_ins_error = [0] * len(n_trees)
-
-# Looping with different number of trees    
-for idx in range(len(n_trees)):
+def creating_plotting_model(n_trees,dfFeatures,dfLabels):
     
-    ##################### Variables
-    hardware_name = []
-    importance_abs_dict = {}
-    importance_ins_dict = {}
-    error_ins_arr = [0] * 3000
-    mse_ins_arr = [0] * 3000
-    plt.figure()
-    
-    # Boundaries for plots
-    rect_top = [0.1,0.65,0.8,0.2]
-    rect_bot_left = [0.1,0.075,0.35,0.5]
-    plt.figure(1,figsize= (9,9))
-    
-    ax = plt.axes(rect_top)
-    cx = plt.axes(rect_bot_left)
-    size = 0
-    for rs in range(1,101):
-        ###### Reapting the above process for the PER_INS values
-        
-        # Splitting the data for PER_INS counters
-        df_features_ins_train, df_features_ins_test, df_labels_ins_train, df_labels_ins_test = train_test_split(df_features_ins,df_labels_ins,test_size = 0.30, random_state=rs ) 
+    pdf = PdfPages('DataPlotForRF2.pdf')
 
-        # Create a Random Fporest with 1000 decision trees
-        rf2 = RandomForestRegressor(n_estimators=n_trees[idx], random_state=rs)
-        
-        # Train the model on training data
-        rf2.fit(df_features_ins_train,np.ravel(df_labels_ins_train,order = 'C'));
-        
-        importance_ins = list(zip(rf2.feature_importances_,df_features_ins_train.columns))
-        importance_ins.sort(reverse= True)
-        
-        for item in importance_ins:
-            temp = item[1].replace("_per_ins","")
-            if temp in importance_ins_dict.keys():
-                importance_ins_dict[temp] = importance_ins_dict[temp] + item[0]
-            else:
-                importance_ins_dict[temp] = item[0]
-        
-        ## testing with 20% of data
-        prediction_ins_test = rf2.predict(df_features_ins_test)
-        
-        #error_test = abs(prediction_test - df_labels_test['LABEL'])
-        mse_ins = mean_squared_error(df_labels_ins_test['LABEL'], prediction_ins_test)
-        mse_ins_arr[rs-1] = mse_ins 
+    rmse_idx = 0
+    rmse_abs_error = [0] * len(n_trees)
+    rmse_ins_error = [0] * len(n_trees)
     
-        #Testing the model with both the train and test 
-        prediction_ins = rf2.predict(df_features_ins)
+    # Looping with different number of trees    
+    for idx in range(len(n_trees)):
+    
+        ##################### Variables
+        importance_ins_dict = {}
+        error_ins_arr = [0] * 3000
+        mse_ins_arr = [0] * 100
+        plt.figure()
         
-        # Calculating the Error
-        error_ins = abs(prediction_ins - df_labels_ins['LABEL'])
-        print len(error_ins)
-        for index,val in error_ins.items():
-            error_ins_arr[index] = error_ins_arr[index] + val
+        # Boundaries for plots
+        rect_top = [0.1,0.65,0.8,0.2]
+        rect_bot_left = [0.1,0.075,0.35,0.5]
+        plt.figure(1,figsize= (9,9))
+        
+        ax = plt.axes(rect_top)
+        cx = plt.axes(rect_bot_left)
+        size = 0
+
+        for rs in range(1,101):
+            #df_feature_train,df_labels_train,df_features_test,df_labels_test = splitTrainAndTest(dfFeatures,dfLabels,rs)
+            df_feature_train, df_features_test, df_labels_train, df_labels_test = train_test_split(dfFeatures,dfLabels,test_size = 0.30, random_state=rs )
+            rf = RandomForestRegressor(n_estimators=n_trees[idx], random_state=rs)
+            print "*******************"
+            print df_feature_train.shape
+            print df_labels_train.shape
+            rf.fit(df_feature_train,np.ravel(df_labels_train,order = 'C'))
             
-        size = rs
-    
-############################################## Plotting the results ##############################################
-    print 'asdasd'
-    # For plotting table with imporatance values 
-    w, h = 2, 15;
-    Matrix = [[0 for x in range(w)] for y in range(h)]
-    labelr = []
-    for x in range(1,16):
-        labelr.append(x)
-    
-    labelc = ['Hardware Counter Name ', 'Importance of INS Counter']
-    
-    sorted_dict = sorted(importance_abs_dict)
+            importance_ins = list(zip(rf.feature_importances_,df_feature_train.columns))
+            importance_ins.sort(reverse= True)
+            
+            
+            for item in importance_ins:
+                temp = item[1].replace("_per_ins","")
+                if temp in importance_ins_dict.keys():
+                    importance_ins_dict[temp] = importance_ins_dict[temp] + item[0]
+                else:
+                    importance_ins_dict[temp] = item[0]
+            ## testing with 20% of data
+            prediction_ins_test = rf.predict(df_features_test)
         
-    name_counter= []    
-    for key, value in sorted(importance_ins_dict.iteritems(), key=lambda (k,v): (v,k),reverse=True):
-        # PAPI_TOT_INS counter present in only abs counters but not in per_ins values
-        if key != 'PAPI_TOT_INS':    
-            name_counter.append(key)
-    cnt = 0
-    for i in range(len(Matrix)):
-        for j in range(len(Matrix[i])):
-            if j == 0 :
-                Matrix[i][j] = name_counter[cnt]
-            if j == 1 :
-                Matrix[i][j] = round(importance_ins_dict[name_counter[cnt]]/size,4)
-        cnt = cnt+1
+            #error_test = abs(prediction_test - df_labels_test['LABEL'])
+            mse_ins = mean_squared_error(df_labels_test['LABEL'], prediction_ins_test)
+            mse_ins_arr[rs-1] = mse_ins
+            
+            #Testing the model with both the train and test 
+            prediction_ins = rf.predict(dfFeatures)
+        
+            # Calculating the Error
+            error_ins = abs(prediction_ins - dfLabels['LABEL'])
+            
+            for index,val in error_ins.items():
+                error_ins_arr[index] = error_ins_arr[index] + val
+                
+            size = rs
+        
+############################################## Plotting the results ##############################################
+        print 'asdasd'
+        # For plotting table with imporatance values 
+        w, h = 2, 15;
+        Matrix = [[0 for x in range(w)] for y in range(h)]
+        labelr = []
+        for x in range(1,16):
+            labelr.append(x)
+            
+        labelc = ['Hardware Counter Name ', 'Importance of INS Counter']
+            
+        name_counter= []    
+        for key, value in sorted(importance_ins_dict.iteritems(), key=lambda (k,v): (v,k),reverse=True):
+            # PAPI_TOT_INS counter present in only abs counters but not in per_ins values
+            if key != 'PAPI_TOT_INS':    
+                name_counter.append(key)
+        cnt = 0
+        for i in range(len(Matrix)):
+            for j in range(len(Matrix[i])):
+                if j == 0 :
+                    Matrix[i][j] = name_counter[cnt]
+                if j == 1 :
+                    Matrix[i][j] = round(importance_ins_dict[name_counter[cnt]]/size,4)
+            cnt = cnt+1
     
-    xList = range(0,3000)
-    # Plotting error values for the INS hardware counter 
-    ax.bar(xList,error_ins_arr)
-    ax.set_title('Random Forest classifier with number of Trees={}'.format(n_trees[idx]))
-    ax.set_ylabel('Error')
-    ax.set_xlabel('Time')    
-    val = max(error_ins_arr)
-    ax.set_ylim([0,val*1.5])
-    rmse_ins_error[rmse_idx] = np.sqrt(np.mean(mse_ins_arr))
-    lightgrn = (0.5, 0.8, 0.5)
-    # Creating table for the imporatance values 
-    table = cx.table(cellText = Matrix,
+        xList = range(0,3000)
+        # Plotting error values for the INS hardware counter 
+        ax.bar(xList,error_ins_arr)
+        ax.set_title('Random Forest classifier with number of Trees={}'.format(n_trees[idx]))
+        ax.set_ylabel('Error')
+        ax.set_xlabel('Time')    
+        val = max(error_ins_arr)
+        ax.set_ylim([0,val*1.5])
+        rmse_ins_error[rmse_idx] = np.sqrt(np.mean(mse_ins_arr))
+        lightgrn = (0.5, 0.8, 0.5)
+            # Creating table for the imporatance values 
+        table = cx.table(cellText = Matrix,
               colLabels=labelc,
               colColours=[lightgrn] * 16,
               cellLoc='center',
               colWidths=[0.4 for x in labelc],    
               loc='center')
-    table.set_fontsize(25)
-    cx.axis('off')
-    rmse_values= [0,rmse_abs_error[rmse_idx],rmse_ins_error[rmse_idx]]
-    values = ['PER_INS']
-    ypos = np.arange(len(values))
-    rmse_idx = rmse_idx + 1
-    pdf.savefig()
-    plt.close()
+        table.set_fontsize(25)
+        cx.axis('off')
+        rmse_values= [0,rmse_abs_error[rmse_idx],rmse_ins_error[rmse_idx]]
+        values = ['PER_INS']
+        ypos = np.arange(len(values))
+        rmse_idx = rmse_idx + 1;
+        pdf.savefig()
+        plt.close()
 
-# Plotting bar graph for RMSE values for different values of the number of trees 
-N = len(n_trees)
-fig1,ex = plt.subplots()
-ind = np.arange(N)
-width = 0.35
-n_trees_Arr = np.asarray(n_trees)  
-ex.bar(ind,rmse_ins_error,width,color='g')
-ex.set_title('RMSE plot for different number of trees')
-ex.set_xticks(ind)
-ex.set_xlabel('Number of trees')
-ex.set_ylabel('Error')
-val = max(rmse_ins_error)
-ex.set_ylim([0,val*1.5])
-ex.set_xticklabels(n_trees_Arr)
-ex.autoscale_view()
-pdf.savefig()   
-plt.close()
-pdf.close()
+    # Plotting bar graph for RMSE values for different values of the number of trees 
+    N = len(n_trees)
+    fig1,ex = plt.subplots()
+    ind = np.arange(N)
+    width = 0.35
+    n_trees_Arr = np.asarray(n_trees)  
+    ex.bar(ind,rmse_ins_error,width,color='g')
+    ex.set_title('RMSE plot for different number of trees')
+    ex.set_xticks(ind)
+    ex.set_xlabel('Number of trees')
+    ex.set_ylabel('Error')
+    val = max(rmse_ins_error)
+    ex.set_ylim([0,val*1.5])
+    ex.set_xticklabels(n_trees_Arr)
+    ex.autoscale_view()
+    pdf.savefig()   
+    plt.close()
+    pdf.close()
+
+        
+          
+def main():
+    # Reading the data from csv file 
+    scalerPath = '../../data/WACCM_imp_sol_scaler.slope.labelled.csv'
+    scalarDF = load_data_from_csv(scalerPath)
+    
+    vectorPath = '../../data/WACCM_imp_sol_vector.slope.labelled.csv'
+    vectorDF = load_data_from_csv(vectorPath)
+    
+    psradPath = '../../data/mg2/PSrad.exe.codeblocks.fused.any.any.any.slope.labelled .csv'
+    psradDF = load_data_from_csv(psradPath)
+    
+    # array of columns to delete
+    arr = ['module_sub_routine','id','time']
+    
+    # Droping the columns 
+    scalarDF = drop_columns(scalarDF,arr)
+    vectorDF = drop_columns(vectorDF,arr)
+    psradDF = drop_columns(psradDF,arr)
+    
+    
+    counter_name = get_CounterNames(vectorDF)
+    counterNameList = remove_ABS_Counter(counter_name)
+    
+    # adding all the dataframes
+    resultDF = append_DataFrames(scalarDF,vectorDF)
+    resultDF = append_DataFrames(resultDF, psradDF)
+    
+    df_per_ins = rearrange(resultDF,counterNameList)
+    dfSplit = splitData(df_per_ins)
+    dfFeatures = dfSplit[0]
+    dfLabels = dfSplit[1]
+        
+    n_trees = [10,40,60,80,100,200,500,1000,1500]
+    
+    creating_plotting_model(n_trees,dfFeatures,dfLabels)
+    
+    print "out"
+    
+    return 0
+          
+if __name__ == "__main__":
+    main()

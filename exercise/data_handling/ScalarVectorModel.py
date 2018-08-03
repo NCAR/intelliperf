@@ -87,9 +87,8 @@ df_labels_ins = df_split_ins[1]
 
 print df_features_ins.shape
 print df_labels_ins.shape
-n_trees= [10,40,60,80,100,200,500,1000,1500]
-#n_trees = [10,40,60,100,200,500,750,1000]
-
+n_trees = [1,3,5,7,10,15,17,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,200]
+#n_trees = [1,3,5,7,10,15,17,20,25,30,35,40,45,50]
 rmse_idx = 0
 rmse_abs_error = [0] * len(n_trees)
 rmse_ins_error = [0] * len(n_trees)
@@ -156,7 +155,6 @@ for idx in range(len(n_trees)):
         size = rs
     
 ############################################## Plotting the results ##############################################
-    print 'asdasd'
     # For plotting table with imporatance values 
     w, h = 2, 15;
     Matrix = [[0 for x in range(w)] for y in range(h)]
@@ -212,17 +210,12 @@ for idx in range(len(n_trees)):
 N = len(n_trees)
 fig1,ex = plt.subplots()
 ind = np.arange(N)
-width = 0.35
 n_trees_Arr = np.asarray(n_trees)  
-ex.bar(ind,rmse_ins_error,width,color='g')
-ex.set_title('RMSE plot for different number of trees')
+ex.plot(rmse_ins_error,'-o',ms=10,lw=2,alpha =0.7,mfc = 'orange')
 ex.set_xticks(ind)
 ex.set_xlabel('Number of trees')
-ex.set_ylabel('Error')
-val = max(rmse_ins_error)
-ex.set_ylim([0,val*1.5])
 ex.set_xticklabels(n_trees_Arr)
-ex.autoscale_view()
+ex.grid()
 pdf.savefig()   
 plt.close()
 pdf.close()

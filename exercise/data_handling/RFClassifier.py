@@ -38,6 +38,11 @@ def remove_ABS_Counter(counterNames):
 def append_DataFrames(dataFrameA,dataFrameB):
     return dataFrameA.append(dataFrameB)
 
+def modifyArr(errorArr):
+    cnt =100
+    errorArr = [x/cnt for x in errorArr]
+    return errorArr
+
 
 def rearrange(dataFrame,counterNameList):
     df_per_ins = pd.DataFrame(columns = counterNameList)
@@ -55,21 +60,22 @@ def splitTrainAndTest(df_features,df_labels,rs):
 
 def creating_plotting_model(n_trees,dfFeatures,dfLabels):
     
-    pdf = PdfPages('DataPlotForRF2.pdf')
+    pdf = PdfPages('ClubbDataMergePlot.pdf')
 
     rmse_idx = 0
-    rmse_abs_error = [0] * len(n_trees)
     rmse_ins_error = [0] * len(n_trees)
     
     # Looping with different number of trees    
     for idx in range(len(n_trees)):
-    
-        ##################### Variables
+        
+        ########## Variables #############
         importance_ins_dict = {}
-        error_ins_arr = [0] * 3000
+        cnt = dfFeatures.shape[0]
+        cnt = cnt +3
+        error_ins_arr = [0] * 4400
         mse_ins_arr = [0] * 100
         plt.figure()
-        
+        print cnt
         # Boundaries for plots
         rect_top = [0.1,0.65,0.8,0.2]
         rect_bot_left = [0.1,0.075,0.35,0.5]
@@ -78,12 +84,10 @@ def creating_plotting_model(n_trees,dfFeatures,dfLabels):
         ax = plt.axes(rect_top)
         cx = plt.axes(rect_bot_left)
         size = 0
-
+        print n_trees[idx]
         for rs in range(1,101):
-            #df_feature_train,df_labels_train,df_features_test,df_labels_test = splitTrainAndTest(dfFeatures,dfLabels,rs)
             df_feature_train, df_features_test, df_labels_train, df_labels_test = train_test_split(dfFeatures,dfLabels,test_size = 0.30, random_state=rs )
             rf = RandomForestRegressor(n_estimators=n_trees[idx], random_state=rs)
-            print "*******************"
             print df_feature_train.shape
             print df_labels_train.shape
             rf.fit(df_feature_train,np.ravel(df_labels_train,order = 'C'))
@@ -110,7 +114,7 @@ def creating_plotting_model(n_trees,dfFeatures,dfLabels):
         
             # Calculating the Error
             error_ins = abs(prediction_ins - dfLabels['LABEL'])
-            
+            print('Length of the %d',len(error_ins))
             for index,val in error_ins.items():
                 error_ins_arr[index] = error_ins_arr[index] + val
                 
@@ -141,8 +145,9 @@ def creating_plotting_model(n_trees,dfFeatures,dfLabels):
                     Matrix[i][j] = round(importance_ins_dict[name_counter[cnt]]/size,4)
             cnt = cnt+1
     
-        xList = range(0,3000)
-        # Plotting error values for the INS hardware counter 
+        xList = range(0,4400)
+        # Plotting error values for the INS hardware counter
+        error_ins_arr = modifyArr(error_ins_arr)
         ax.bar(xList,error_ins_arr)
         ax.set_title('Random Forest classifier with number of Trees={}'.format(n_trees[idx]))
         ax.set_ylabel('Error')
@@ -160,9 +165,6 @@ def creating_plotting_model(n_trees,dfFeatures,dfLabels):
               loc='center')
         table.set_fontsize(25)
         cx.axis('off')
-        rmse_values= [0,rmse_abs_error[rmse_idx],rmse_ins_error[rmse_idx]]
-        values = ['PER_INS']
-        ypos = np.arange(len(values))
         rmse_idx = rmse_idx + 1;
         pdf.savefig()
         plt.close()
@@ -171,17 +173,12 @@ def creating_plotting_model(n_trees,dfFeatures,dfLabels):
     N = len(n_trees)
     fig1,ex = plt.subplots()
     ind = np.arange(N)
-    width = 0.35
     n_trees_Arr = np.asarray(n_trees)  
-    ex.bar(ind,rmse_ins_error,width,color='g')
-    ex.set_title('RMSE plot for different number of trees')
+    ex.plot(rmse_ins_error,'-o',ms=10,lw=2,alpha =0.7,mfc = 'orange')
     ex.set_xticks(ind)
     ex.set_xlabel('Number of trees')
-    ex.set_ylabel('Error')
-    val = max(rmse_ins_error)
-    ex.set_ylim([0,val*1.5])
     ex.set_xticklabels(n_trees_Arr)
-    ex.autoscale_view()
+    ex.grid()
     pdf.savefig()   
     plt.close()
     pdf.close()
@@ -199,6 +196,12 @@ def main():
     psradPath = '../../data/mg2/PSrad.exe.codeblocks.fused.any.any.any.slope.labelled .csv'
     psradDF = load_data_from_csv(psradPath)
     
+    wetdepaPath = '../../data/wetdepa_driver_v0.labelled.csv'
+    wetdepaDF = load_data_from_csv(wetdepaPath)
+    
+    clubbPath = '../../data/clubb.labelled.csv'
+    clubbDF = load_data_from_csv(clubbPath)
+    
     # array of columns to delete
     arr = ['module_sub_routine','id','time']
     
@@ -206,21 +209,25 @@ def main():
     scalarDF = drop_columns(scalarDF,arr)
     vectorDF = drop_columns(vectorDF,arr)
     psradDF = drop_columns(psradDF,arr)
-    
-    
+    wetdepaDF = drop_columns(wetdepaDF,arr)
+    clubbDF = drop_columns(clubbDF,arr)
+    clubbDF
     counter_name = get_CounterNames(vectorDF)
     counterNameList = remove_ABS_Counter(counter_name)
     
     # adding all the dataframes
     resultDF = append_DataFrames(scalarDF,vectorDF)
     resultDF = append_DataFrames(resultDF, psradDF)
+    resultDF = append_DataFrames(resultDF, wetdepaDF)
+    resultDF = append_DataFrames(resultDF,clubbDF)
     
     df_per_ins = rearrange(resultDF,counterNameList)
     dfSplit = splitData(df_per_ins)
     dfFeatures = dfSplit[0]
     dfLabels = dfSplit[1]
-        
-    n_trees = [10,40,60,80,100,200,500,1000,1500]
+    #n_trees = [1,3,5]   
+    n_trees = [1,3,5,7,10,15,17,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,200]
+
     
     creating_plotting_model(n_trees,dfFeatures,dfLabels)
     

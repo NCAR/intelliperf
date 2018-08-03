@@ -34,6 +34,12 @@ vectorDF = vectorDF.drop(['module_sub_routine','id','time'],axis=1)
 # Relative path to the Data file
 csvfile= '../../data/mg2/PSrad.exe.codeblocks.fused.any.any.any.slope.labelled .csv'
 
+wetdepaPath = '../../data/wetdepa_driver_v0.labelled.csv'
+wetdepaDF = pd.read_csv(wetdepaPath,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
+    
+clubbPath = '../../data/clubb.labelled.csv'
+clubbDF = pd.read_csv(clubbPath,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
+    
 #Converting CSV data to dataframe
 dataDF = pd.read_csv(csvfile,delimiter = ';',names = ["module_sub_routine","id","hardware_Counter","time","event"])
 dataDF = dataDF.drop(['module_sub_routine','id','time'],axis=1)
@@ -52,7 +58,6 @@ resultDF = scalarDF.append(vectorDF)
 
 resultDF = resultDF.append(dataDF)
 
-print resultDF.shape
 df_per_ins = pd.DataFrame(columns = counterName)
 
 for tempStr in counterName:
